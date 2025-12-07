@@ -21,16 +21,13 @@ jobs:
             - name: Install lld
               run: sudo apt install -y lld clang gcc llvm
 
-            # 安装 worker-build
+            # 安装 worker-build 作为全局工具
             - name: Install worker-build
-              run: |
-                  if ! command -v worker-build &> /dev/null; then
-                    cargo install --locked worker-build
-                  fi
-            
-            # 构建 WASM 模块
+              run: cargo install --locked worker-build
+
+            # 使用全局安装的 worker-build 工具构建 WASM 模块
             - name: Build WASM module
-              run: cargo run --bin worker-build --release
+              run: worker-build --release
 
             # 替换 D1_DATABASE_ID in wrangler.toml
             - name: Replace D1_DATABASE_ID in wrangler.toml
@@ -44,5 +41,5 @@ jobs:
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  command: deploy  # 添加明确的部署命令
-                  verbosity: verbose  # 启用详细日志
+                  command: deploy
+                  verbosity: verbose
