@@ -15,57 +15,37 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            # 安装 Rust 工具链和依赖
-            - name: Install Rust toolchain
-              run: rustup toolchain install stable --profile minimal
-            
-            - name: Add wasm32 target
-              run: rustup target add wasm32-unknown-unknown
-            
-            - name: Install system dependencies
+            # selecting a toolchain either by action or manual `rustup` calls should happen
+            # before the plugin, as the cache uses the current rustc version as its cache key
+            - run: rustup toolchain install stable --profile minimal
+            # - name: Cache Cargo registry and build artifacts
+            #   uses: actions/cache@v3
+            #   with:
+            #       path: |
+            #           target
+            #           ~/.cargo/bin
+            #           ~/.cargo/registry
+            #           ~/.cargo/git
+            #       key: cargo-build-cache-${{ github.run_id }}
+            #       restore-keys: |
+            #           cargo-build-cache-
+            - run: rustup target add wasm32-unknown-unknown
+            - name: Install lld
               run: sudo apt install -y lld clang gcc llvm
 
-            # 替换 wrangler.toml 中的 D1_DATABASE_ID
-            - name: Configure wrangler.toml
+            - name: Install worker-build
+              run: |
+                  if ! command -v worker-build &> /dev/null; then
+                    cargo install worker-build
+                  fi
+
+            - name: Replace D1_DATABASE_ID in wrangler.toml
               run: sed -i "s/\${D1_DATABASE_ID}/${{ secrets.D1_DATABASE_ID }}/g" wrangler.toml
-            
-            # 验证配置
-            - name: Verify wrangler.toml configuration
-              run: cat wrangler.toml
 
-            # 以下是 D1 迁移相关步骤，已注释掉
-            # - name: Create migrations directory
-            #   run: mkdir -p migrations
-            # - name: Create initial migration
-            #   run: |
-            #     cat > migrations/0001_initial.sql << EOF
-            #     -- Create your initial tables here
-            #     CREATE TABLE IF NOT EXISTS users (
-            #       id INTEGER PRIMARY KEY AUTOINCREMENT,
-            #       name TEXT NOT NULL,
-            #       email TEXT NOT NULL UNIQUE
-            #     );
-            #     EOF
-
-            # 运行 D1 迁移步骤，已注释掉
-            # - name: Run D1 migrations
-            #   uses: cloudflare/wrangler-action@v3
-            #   id: cf
-            #   env:
-            #       D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
-            #   with:
-            #       apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-            #       accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-            #       command: d1 migrations apply vault1
-            #       # 可选：指定 Wrangler 版本
-            #       # wranglerVersion: '4.53.0'
-
-            # 部署 Worker
-            - name: Deploy Worker
-              uses: cloudflare/wrangler-action@v3
+            - uses: cloudflare/wrangler-action@v3
+              id: cf
+              env:
+                  D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  command: deploy
-                  # 可选：指定 Wrangler 版本
-                  # wranglerVersion: '4.53.0'
