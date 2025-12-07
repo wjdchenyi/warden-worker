@@ -33,23 +33,39 @@ jobs:
             - name: Verify wrangler.toml configuration
               run: cat wrangler.toml
 
-            # 运行 Wrangler 命令 - 执行 D1 迁移
-            - name: Run D1 migrations
-              uses: cloudflare/wrangler-action@v3
-              id: cf
-              env:
-                  D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
-              with:
-                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  command: d1 migrations apply vault1
-                  debug: true
+            # 以下是 D1 迁移相关步骤，已注释掉
+            # - name: Create migrations directory
+            #   run: mkdir -p migrations
+            # - name: Create initial migration
+            #   run: |
+            #     cat > migrations/0001_initial.sql << EOF
+            #     -- Create your initial tables here
+            #     CREATE TABLE IF NOT EXISTS users (
+            #       id INTEGER PRIMARY KEY AUTOINCREMENT,
+            #       name TEXT NOT NULL,
+            #       email TEXT NOT NULL UNIQUE
+            #     );
+            #     EOF
 
-            # 可选：部署 Worker（如果需要）
+            # 运行 D1 迁移步骤，已注释掉
+            # - name: Run D1 migrations
+            #   uses: cloudflare/wrangler-action@v3
+            #   id: cf
+            #   env:
+            #       D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+            #   with:
+            #       apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+            #       accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+            #       command: d1 migrations apply vault1
+            #       # 可选：指定 Wrangler 版本
+            #       # wranglerVersion: '4.53.0'
+
+            # 部署 Worker
             - name: Deploy Worker
               uses: cloudflare/wrangler-action@v3
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   command: deploy
-                  debug: true
+                  # 可选：指定 Wrangler 版本
+                  # wranglerVersion: '4.53.0'
